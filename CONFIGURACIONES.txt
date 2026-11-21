@@ -1,0 +1,516 @@
+===============================================================================
+                    BAD APPLE!! ASCII PLAYER — CONFIGURACIONES
+                                 (versión 2.0)
+===============================================================================
+
+Este archivo tiene dos partes:
+
+  PARTE A. Referencia de todas las opciones (qué hace cada una).
+  PARTE B. Presets listos para copiar y pegar.
+
+Hay dos formas de configurar el reproductor:
+
+  1) EN EL COMANDO (solo para esa ejecución):
+       python bad_apple.py --cols 140 --color verde
+
+  2) EN EL ARCHIVO (cambia los valores por defecto):
+       Abre bad_apple.py, busca el bloque "CONFIGURACIÓN" al principio del
+       archivo, cambia los valores y guarda.
+
+  Si usas las dos, gana lo que escribas en el comando. Las opciones de
+  sí/no tienen dos formas, --opcion y --no-opcion, así que desde el comando
+  siempre puedes anular lo que pusiste en el archivo.
+
+
+===============================================================================
+ PARTE A — REFERENCIA DE OPCIONES
+===============================================================================
+
+Formato:
+  VARIABLE EN EL ARCHIVO   |  OPCIÓN EN EL COMANDO
+  Valor por defecto, rango recomendado y explicación.
+
+-------------------------------------------------------------------------------
+ A1. ENTRADA
+-------------------------------------------------------------------------------
+
+ VIDEO                     |  (primer argumento, sin guiones)
+   Defecto ..... "badapple.mp4"
+   Valores ..... Cualquier ruta de video que FFmpeg pueda leer
+                 (mp4, webm, mkv, avi, mov, gif...).
+   Qué hace .... El video que se reproduce si no escribes ninguno.
+   Ejemplo ..... python bad_apple.py "C:\Videos\mi video.mp4"
+   Nota ........ Si la ruta tiene espacios, ponla entre comillas.
+
+-------------------------------------------------------------------------------
+ A2. IMAGEN
+-------------------------------------------------------------------------------
+
+ COLUMNAS                  |  --cols N
+   Defecto ..... 100
+   Rango ....... 60 - 200 (recomendado). Mínimo: 2.
+   Qué hace .... Ancho de la imagen en caracteres. Las filas se calculan
+                 solas para mantener la proporción del video.
+                 Más columnas = más detalle y más uso de CPU.
+   Filas resultantes con badapple.mp4 (480x360):
+                    60 cols -> 22 filas
+                    80 cols -> 30 filas
+                   100 cols -> 38 filas
+                   120 cols -> 45 filas
+                   150 cols -> 56 filas
+                   200 cols -> 75 filas
+   Nota ........ En modo terminal, con el ajuste automático activado, se
+                 reducen solas si no caben en la consola.
+
+ RAMPA                     |  --rampa "TEXTO"
+   Defecto ..... " .:-=+*#%@"
+   Valores ..... Cualquier cadena de 2 o más caracteres.
+   Qué hace .... Caracteres usados para dibujar, ordenados de OSCURO a CLARO.
+                 El primero se usa para el negro y el último para el blanco.
+                 Más caracteres = degradados más suaves.
+   Rampas de ejemplo:
+     Clásica (defecto) .... " .:-=+*#%@"
+     Bloques .............. " ░▒▓█"
+     Binaria (2 tonos) .... " #"
+     Minimalista .......... " .oO@"
+     Larga (70 tonos) ..... ver el preset B12 (lleva comillas y barras
+                            dentro, así que va mejor en el archivo).
+   Nota ........ Los bloques (░▒▓█) se ven muy bien en la ventana; en la
+                 consola clásica de Windows pueden no mostrarse.
+   Nota ........ Al exportar a video, { } \ se cambian por ( ) /.
+
+ INVERTIR                  |  --invertir  /  --no-invertir
+   Defecto ..... False
+   Qué hace .... Da la vuelta a la rampa: lo claro se dibuja oscuro y al
+                 revés. Útil con fondo blanco o para videos claros.
+
+ MULTICOLOR                |  --multicolor  /  --no-multicolor
+   Defecto ..... False
+   Qué hace .... Cada carácter toma el color del píxel original del video
+                 (reducido a 512 tonos). Funciona en la ventana, en la
+                 terminal y al exportar.
+   Nota ........ Con MULTICOLOR activado, COLOR_TEXTO deja de usarse.
+   Nota ........ Bad Apple!! es en blanco y negro, así que se verá en
+                 grises; donde luce de verdad es con otros videos.
+   Nota ........ Es unas 3-4 veces más pesado. Si va a tirones, usa
+                 PRECARGAR o menos columnas.
+
+ FPS                       |  --fps N
+   Defecto ..... None (usa los FPS del video, con un máximo de 60)
+   Rango ....... 10 - 60
+   Qué hace .... Cuadros por segundo a los que se convierte el video.
+                 Bajarlo alivia la CPU; el video sigue durando lo mismo
+                 y sincronizado con el audio, solo menos fluido.
+   Nota ........ badapple.mp4 va a 30 FPS; poner más de 30 no aporta nada.
+
+-------------------------------------------------------------------------------
+ A3. APARIENCIA
+-------------------------------------------------------------------------------
+
+ COLOR_TEXTO               |  --color COLOR
+   Defecto ..... "#ffffff" (blanco)
+   Valores ..... "#rrggbb", "#rgb" o un nombre:
+                   blanco, negro, gris, rojo, verde, lima, matrix, azul,
+                   amarillo, cian, magenta, fucsia, naranja, rosa, morado,
+                   violeta, dorado, ambar
+                   (y en inglés: white, black, gray, red, green, blue...)
+   Qué hace .... Color de los caracteres (ventana, terminal y exportación).
+   Nota ........ En la ventana también vale cualquier nombre de color de
+                 Tkinter ("SteelBlue", "tomato"...).
+
+ COLOR_FONDO               |  --fondo COLOR
+   Defecto ..... "#000000" (negro)
+   Valores ..... Igual que COLOR_TEXTO.
+   Qué hace .... Color de fondo de la ventana y del video exportado.
+   Nota ........ En el modo terminal no tiene efecto: se usa el fondo de tu
+                 consola.
+
+ TAMANO_LETRA              |  --letra N
+   Defecto ..... 7
+   Rango ....... 4 - 12 (mínimo 2)
+   Qué hace .... Tamaño de letra con el que se abre la ventana. Con el
+                 ajuste automático, luego se adapta solo al tamaño de la
+                 ventana. Se puede cambiar en vivo con + y -.
+   Nota ........ En el modo terminal no tiene efecto: cambia la fuente de la
+                 consola (Ctrl + rueda del ratón en Windows Terminal).
+
+ AJUSTE_AUTO               |  --ajustar  /  --no-ajustar
+   Defecto ..... True
+   Qué hace .... - Ventana: busca la letra más grande que cabe cada vez que
+                   cambias el tamaño de la ventana o pulsas F11.
+                 - Terminal: si la consola es más pequeña que la imagen,
+                   reduce las columnas al arrancar.
+   Nota ........ Pulsar + o - lo desactiva; pulsar 0 lo vuelve a activar.
+
+-------------------------------------------------------------------------------
+ A4. AUDIO
+-------------------------------------------------------------------------------
+
+ CON_AUDIO                 |  --audio  /  --no-audio   (o --sin-audio)
+   Defecto ..... True (con sonido)
+   Qué hace .... Activa o desactiva el audio, también en el video exportado.
+                 Si no se encuentra ffplay, se desactiva solo al reproducir.
+
+ RETRASO_AUDIO             |  --retraso-audio S
+   Defecto ..... 0.15 (segundos)
+   Rango ....... 0 - 1
+   Qué hace .... Retrasa el inicio del video para esperar a que ffplay
+                 arranque, y así queden sincronizados. También se aplica
+                 al reanudar después de una pausa.
+                   Sonido ADELANTADO a la imagen -> súbelo (0.25, 0.3...)
+                   Sonido ATRASADO a la imagen ---> bájalo (0.1, 0.05, 0)
+   Nota ........ Solo se aplica cuando hay audio.
+
+-------------------------------------------------------------------------------
+ A5. REPRODUCCIÓN
+-------------------------------------------------------------------------------
+
+ EN_TERMINAL               |  --terminal  /  --no-terminal
+   Defecto ..... False (usa la ventana)
+   Qué hace .... Dibuja en la consola con códigos ANSI en lugar de abrir
+                 una ventana de Tkinter.
+   Nota ........ Usa Windows Terminal para que se vea bien y fluido.
+
+ BUCLE                     |  --bucle  /  --no-bucle
+   Defecto ..... False
+   Qué hace .... Al terminar el video, vuelve a empezar (con el audio).
+   Nota ........ Sin bucle, al terminar puedes pulsar Espacio para repetir.
+
+ PRECARGAR                 |  --precargar  /  --no-precargar
+   Defecto ..... False
+   Qué hace .... Antes de reproducir, convierte el video entero y lo guarda
+                 comprimido en la carpeta de caché. La primera vez tarda
+                 unos segundos (con barra de progreso); las siguientes
+                 arranca al instante y va totalmente fluido.
+   Nota ........ Se genera una caché distinta por cada combinación de
+                 video, columnas, FPS, rampa, invertir y multicolor.
+   Nota ........ Para borrar la caché:  python bad_apple.py --limpiar-cache
+
+ CARPETA_CACHE             |  (solo en el archivo)
+   Defecto ..... ".cache_ascii"
+   Qué hace .... Nombre de la carpeta (junto a bad_apple.py) donde se
+                 guardan los videos precargados.
+
+-------------------------------------------------------------------------------
+ A6. EXPORTAR
+-------------------------------------------------------------------------------
+
+ (solo en el comando)      |  --exportar ARCHIVO
+   Qué hace .... En vez de reproducir, guarda la animación. El formato se
+                 elige por la extensión:
+                   .mp4 .mkv .mov ... video H.264 con audio
+                   .webm ............ video WebM con audio
+                   .gif ............. GIF animado en bucle (sin audio)
+                   .txt ............. todos los cuadros como texto, con
+                                      número y tiempo de cada uno
+   Nota ........ Respeta COLUMNAS, FPS, RAMPA, INVERTIR, MULTICOLOR,
+                 COLOR_TEXTO, COLOR_FONDO y CON_AUDIO.
+   Nota ........ En .txt con MULTICOLOR se guardan los códigos de color de
+                 terminal (se ven con "type archivo.txt" en Windows
+                 Terminal, o "cat" en Linux/macOS).
+
+ ALTO_EXPORTAR             |  --alto-exportar N
+   Defecto ..... 720
+   Rango ....... 360 - 2160
+   Qué hace .... Alto aproximado en píxeles del video exportado. El ancho
+                 se calcula solo. Ejemplo: 100 columnas a 720 -> 876x716.
+
+-------------------------------------------------------------------------------
+ A7. RUTAS DE FFMPEG (solo en el comando)
+-------------------------------------------------------------------------------
+
+ --ffmpeg RUTA   /   --ffprobe RUTA   /   --ffplay RUTA
+   Defecto ..... Se buscan solos en el PATH.
+   Qué hace .... Indica dónde están si no están en el PATH.
+   Ejemplo ..... python bad_apple.py --ffmpeg "C:\ffmpeg\bin\ffmpeg.exe"
+                   --ffprobe "C:\ffmpeg\bin\ffprobe.exe"
+                   --ffplay "C:\ffmpeg\bin\ffplay.exe"
+
+-------------------------------------------------------------------------------
+ A8. TECLAS
+-------------------------------------------------------------------------------
+  Ventana:   Espacio pausa/seguir · F11 pantalla completa · + / - letra
+             0 ajuste automático · Esc salir de completa o cerrar · Q cerrar
+  Terminal:  Espacio pausa/seguir · Q o Esc salir · Ctrl+C salir
+
+
+===============================================================================
+ PARTE B — PRESETS LISTOS
+===============================================================================
+
+Cada preset tiene:
+  > COMANDO ..... para copiar y pegar en la terminal.
+  > ARCHIVO ..... valores para pegar en el bloque CONFIGURACIÓN de
+                  bad_apple.py (solo se indican los que cambian).
+
+-------------------------------------------------------------------------------
+ B1. CLÁSICO (por defecto)
+-------------------------------------------------------------------------------
+  Blanco sobre negro, como el Bad Apple!! ASCII original.
+
+  > COMANDO
+      python bad_apple.py
+
+  > ARCHIVO
+      COLUMNAS = 100
+      COLOR_TEXTO = "#ffffff"
+      COLOR_FONDO = "#000000"
+      RAMPA = " .:-=+*#%@"
+
+-------------------------------------------------------------------------------
+ B2. ALTA DEFINICIÓN EN PANTALLA COMPLETA
+-------------------------------------------------------------------------------
+  Mucho detalle. Al arrancar pulsa F11: la letra se ajusta sola.
+
+  > COMANDO
+      python bad_apple.py --cols 180 --precargar
+
+  > ARCHIVO
+      COLUMNAS = 180
+      PRECARGAR = True
+
+-------------------------------------------------------------------------------
+ B3. RENDIMIENTO (PC lento o portátil con batería)
+-------------------------------------------------------------------------------
+  Menos detalle y menos cuadros, pero muy fluido.
+
+  > COMANDO
+      python bad_apple.py --cols 70 --fps 20 --precargar
+
+  > ARCHIVO
+      COLUMNAS = 70
+      FPS = 20
+      PRECARGAR = True
+
+-------------------------------------------------------------------------------
+ B4. MATRIX (verde hacker)
+-------------------------------------------------------------------------------
+  > COMANDO
+      python bad_apple.py --color matrix
+
+  > ARCHIVO
+      COLOR_TEXTO = "#00ff66"
+      COLOR_FONDO = "#000000"
+
+-------------------------------------------------------------------------------
+ B5. MONITOR ÁMBAR RETRO
+-------------------------------------------------------------------------------
+  Como las pantallas de fósforo ámbar de los 80.
+
+  > COMANDO
+      python bad_apple.py --color ambar --fondo "#1a0f00"
+
+  > ARCHIVO
+      COLOR_TEXTO = "#ffb000"
+      COLOR_FONDO = "#1a0f00"
+
+-------------------------------------------------------------------------------
+ B6. GAME BOY
+-------------------------------------------------------------------------------
+  Los tonos verdosos de la Game Boy original.
+
+  > COMANDO
+      python bad_apple.py --color "#9bbc0f" --fondo "#0f380f"
+
+  > ARCHIVO
+      COLOR_TEXTO = "#9bbc0f"
+      COLOR_FONDO = "#0f380f"
+
+-------------------------------------------------------------------------------
+ B7. PAPEL (negro sobre blanco)
+-------------------------------------------------------------------------------
+  Invierte la imagen para que se vea como tinta sobre papel.
+
+  > COMANDO
+      python bad_apple.py --invertir --color negro --fondo blanco
+
+  > ARCHIVO
+      INVERTIR = True
+      COLOR_TEXTO = "#000000"
+      COLOR_FONDO = "#ffffff"
+
+-------------------------------------------------------------------------------
+ B8. AZUL NEÓN
+-------------------------------------------------------------------------------
+  > COMANDO
+      python bad_apple.py --color "#3d8bff" --fondo "#05070f"
+
+  > ARCHIVO
+      COLOR_TEXTO = "#3d8bff"
+      COLOR_FONDO = "#05070f"
+
+-------------------------------------------------------------------------------
+ B9. ROJO (Reimu)
+-------------------------------------------------------------------------------
+  > COMANDO
+      python bad_apple.py --color "#ff3355" --fondo "#120004"
+
+  > ARCHIVO
+      COLOR_TEXTO = "#ff3355"
+      COLOR_FONDO = "#120004"
+
+-------------------------------------------------------------------------------
+ B10. BLOQUES SÓLIDOS
+-------------------------------------------------------------------------------
+  Usa bloques en lugar de letras: parece una pantalla de píxeles.
+
+  > COMANDO
+      python bad_apple.py --rampa " ░▒▓█" --cols 120
+
+  > ARCHIVO
+      RAMPA = " ░▒▓█"
+      COLUMNAS = 120
+
+-------------------------------------------------------------------------------
+ B11. SILUETA PURA (2 tonos)
+-------------------------------------------------------------------------------
+  Solo blanco o negro, sin grises. Resalta las sombras de Bad Apple!!.
+
+  > COMANDO
+      python bad_apple.py --rampa " #" --cols 120
+
+  > ARCHIVO
+      RAMPA = " #"
+      COLUMNAS = 120
+
+-------------------------------------------------------------------------------
+ B12. DEGRADADO SUAVE (70 tonos)
+-------------------------------------------------------------------------------
+  Máxima gama de grises. Ponlo en el ARCHIVO, porque en el comando las
+  comillas internas dan problemas.
+
+  > ARCHIVO
+      RAMPA = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
+      COLUMNAS = 140
+
+-------------------------------------------------------------------------------
+ B13. MULTICOLOR
+-------------------------------------------------------------------------------
+  Cada carácter con el color del video. Ideal para otros videos a color.
+
+  > COMANDO
+      python bad_apple.py otro_video.mp4 --multicolor --cols 140 --precargar
+
+  > ARCHIVO
+      MULTICOLOR = True
+      COLUMNAS = 140
+      PRECARGAR = True
+
+-------------------------------------------------------------------------------
+ B14. TERMINAL CLÁSICO
+-------------------------------------------------------------------------------
+  En la consola, sin ventana. Maximiza la terminal antes de empezar.
+
+  > COMANDO
+      python bad_apple.py --terminal --cols 120
+
+  > ARCHIVO
+      EN_TERMINAL = True
+      COLUMNAS = 120
+
+-------------------------------------------------------------------------------
+ B15. TERMINAL HACKER
+-------------------------------------------------------------------------------
+  > COMANDO
+      python bad_apple.py --terminal --cols 120 --color matrix
+
+  > ARCHIVO
+      EN_TERMINAL = True
+      COLUMNAS = 120
+      COLOR_TEXTO = "#00ff66"
+
+-------------------------------------------------------------------------------
+ B16. FONDO DE PANTALLA / SALVAPANTALLAS
+-------------------------------------------------------------------------------
+  Se repite sin parar y sin sonido. Pulsa F11 al arrancar.
+
+  > COMANDO
+      python bad_apple.py --bucle --no-audio --precargar
+
+  > ARCHIVO
+      BUCLE = True
+      CON_AUDIO = False
+      PRECARGAR = True
+
+-------------------------------------------------------------------------------
+ B17. SILENCIOSO
+-------------------------------------------------------------------------------
+  Sin audio (para la oficina, la clase o de noche).
+
+  > COMANDO
+      python bad_apple.py --no-audio
+
+  > ARCHIVO
+      CON_AUDIO = False
+
+-------------------------------------------------------------------------------
+ B18. CORRECCIÓN DE SINCRONIZACIÓN
+-------------------------------------------------------------------------------
+  Si el sonido no coincide con la imagen.
+
+  Sonido adelantado:
+      python bad_apple.py --retraso-audio 0.3
+
+  Sonido atrasado:
+      python bad_apple.py --retraso-audio 0.05
+
+  > ARCHIVO (ejemplo)
+      RETRASO_AUDIO = 0.3
+
+-------------------------------------------------------------------------------
+ B19. EXPORTAR A VIDEO PARA COMPARTIR (MP4 720p con audio)
+-------------------------------------------------------------------------------
+  > COMANDO
+      python bad_apple.py --exportar bad_apple_ascii.mp4
+
+  Variante en 1080p con más detalle:
+      python bad_apple.py --exportar bad_apple_hd.mp4 --cols 160 --alto-exportar 1080
+
+  Variante verde Matrix:
+      python bad_apple.py --exportar bad_apple_matrix.mp4 --color matrix
+
+-------------------------------------------------------------------------------
+ B20. EXPORTAR A GIF (para redes o chats)
+-------------------------------------------------------------------------------
+  Los GIF pesan mucho: menos columnas, menos FPS y menos alto.
+
+  > COMANDO
+      python bad_apple.py --exportar bad_apple.gif --cols 80 --fps 15 --alto-exportar 360
+
+-------------------------------------------------------------------------------
+ B21. EXPORTAR A TEXTO
+-------------------------------------------------------------------------------
+  Todos los cuadros en un .txt, con su número y su tiempo.
+
+  > COMANDO
+      python bad_apple.py --exportar bad_apple.txt --cols 80
+
+-------------------------------------------------------------------------------
+ B22. OTRO VIDEO
+-------------------------------------------------------------------------------
+  Funciona con cualquier video; los de alto contraste son los que mejor
+  quedan.
+
+  > COMANDO
+      python bad_apple.py "otro_video.mp4" --cols 120
+
+  > ARCHIVO
+      VIDEO = "otro_video.mp4"
+
+
+===============================================================================
+ PALETA DE COLORES RÁPIDA (para --color y --fondo)
+===============================================================================
+  Nombres listos: blanco, negro, gris, rojo, verde, lima, matrix, azul,
+  amarillo, cian, magenta, fucsia, naranja, rosa, morado, violeta, dorado,
+  ambar.
+
+  Blanco ......... #ffffff        Negro .......... #000000
+  Gris claro ..... #c0c0c0        Gris oscuro .... #202020
+  Verde Matrix ... #00ff66        Verde Game Boy . #9bbc0f / #0f380f
+  Ámbar .......... #ffb000        Naranja ........ #ff7a00
+  Rojo ........... #ff3355        Rosa ........... #ff77cc
+  Azul ........... #3d8bff        Cian ........... #00e5ff
+  Morado ......... #b066ff        Amarillo ....... #ffe14d
+
+===============================================================================

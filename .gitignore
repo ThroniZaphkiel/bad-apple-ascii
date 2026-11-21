@@ -1,0 +1,21 @@
+# Videos y audio: tienen derechos de autor de terceros (ver README.txt)
+*.mp4
+*.mkv
+*.webm
+*.mov
+*.avi
+*.gif
+*.wav
+
+# Generados por el programa
+.cache_ascii/
+__pycache__/
+*.pyc
+
+# Compilación del .exe (PyInstaller)
+build/
+dist/
+*.spec
+
+# Visual Studio
+.vs/

@@ -1,4 +1,4 @@
-# Videos y audio: tienen derechos de autor de terceros (ver README.txt)
+# Videos y audio: tienen derechos de autor de terceros (ver README.md)
 *.mp4
 *.mkv
 *.webm
@@ -6,6 +6,8 @@
 *.avi
 *.gif
 *.wav
+# Excepción: el GIF de demostración del README (unos segundos, sin audio, en ASCII)
+!docs/demo.gif
 
 # Generados por el programa
 .cache_ascii/

@@ -7,7 +7,7 @@ cuadros pequeños, cada píxel se convierte en un carácter y el resultado se
 dibuja en una ventana de Tkinter (o en la terminal). ffplay reproduce el audio
 y un reloj mantiene ambos sincronizados.
 
-Autor: Zaphkiel — Licencia MIT (ver README.txt)
+Autor: Zaphkiel — Licencia MIT (ver LICENSE y README.md)
 
 Requisitos:
   - Python 3.9+ (solo librería estándar)
@@ -1362,7 +1362,7 @@ def main(propia=False):
     if not os.path.isfile(args.video):
         sys.exit(f"No encuentro el video: {args.video}\n"
                  f"Pon el video en esta carpeta o escribe su ruta: {nombre_comando()} \"mi video.mp4\"\n"
-                 "(El video de Bad Apple!! no viene incluido; ver README.txt.)")
+                 "(El video de Bad Apple!! no viene incluido; ver README.md.)")
     if not args.ffmpeg or not args.ffprobe:
         sys.exit("Falta ffmpeg/ffprobe. Instálalo (Windows: winget install ffmpeg) o pon "
                  "ffmpeg.exe y ffprobe.exe junto al programa, y vuelve a intentar.")

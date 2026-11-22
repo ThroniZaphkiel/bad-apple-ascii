@@ -12,6 +12,25 @@
 
 
 -------------------------------------------------------------------------------
+ DESCARGA RÁPIDA (WINDOWS, SIN INSTALAR PYTHON)
+-------------------------------------------------------------------------------
+  1) Descarga "BadAppleASCII-v3.0-windows.zip" de la página de Releases:
+       https://github.com/ThroniZaphkiel/bad-apple-ascii/releases/latest
+     (en la sección "Assets", al final de la página).
+  2) Descomprime el .zip en una carpeta (clic derecho > Extraer todo).
+  3) Instala FFmpeg. Abre PowerShell y escribe:   winget install ffmpeg
+     (o pon ffmpeg.exe, ffprobe.exe y ffplay.exe junto al programa).
+  4) Consigue el video por tu cuenta (no viene incluido, ver sección 3) y
+     guárdalo como "badapple.mp4" en la misma carpeta que el .exe.
+  5) Doble clic en BadAppleASCII.exe. También puedes arrastrar cualquier
+     video encima del .exe.
+
+  Si Windows muestra "Windows protegió su PC" (SmartScreen), es porque el
+  .exe no tiene firma digital: pulsa "Más información" > "Ejecutar de todas
+  formas". Si prefieres no hacerlo, usa la versión en Python (sección 6).
+
+
+-------------------------------------------------------------------------------
  ÍNDICE
 -------------------------------------------------------------------------------
   1.  ¿Qué es esto?
@@ -112,6 +131,7 @@ así que nunca se suben por accidente.
   CONFIGURACIONES.txt . Referencia de todas las opciones y presets listos.
   construir_exe.bat ... Compila las versiones .exe (ver sección 8).
   icono.ico ........... Icono del programa (una manzana hecha con ASCII).
+  LICENSE ............. Licencia MIT del código (ver sección 15).
   .gitignore .......... Lo que git no debe guardar (videos, caché, .exe).
   badapple.mp4 ........ (No incluido; ver sección 3.)
   .cache_ascii\ ....... (Se crea sola con --precargar.) Se puede borrar:
@@ -168,8 +188,11 @@ prioridad. Hay presets listos para copiar en CONFIGURACIONES.txt.
 -------------------------------------------------------------------------------
  8. VERSIÓN .EXE (SIN INSTALAR PYTHON)
 -------------------------------------------------------------------------------
-Doble clic en construir_exe.bat (necesita Python la primera vez, solo para
-compilar). Crea dos programas en la carpeta dist\:
+La forma más fácil: descarga los .exe ya compilados de la página de Releases
+(ver "Descarga rápida", al principio de este archivo).
+
+Para compilarlos tú: doble clic en construir_exe.bat (necesita Python, solo
+para compilar). Crea dos programas en la carpeta dist\:
 
   BadAppleASCII.exe .......... Para doble clic. Abre la ventana directamente,
                                sin consola. También puedes arrastrar

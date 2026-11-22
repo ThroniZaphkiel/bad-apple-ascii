@@ -1,6 +1,6 @@
 ===============================================================================
                     BAD APPLE!! ASCII PLAYER — CONFIGURACIONES
-                                 (versión 2.0)
+                                 (versión 3.0)
 ===============================================================================
 
 Este archivo tiene dos partes:
@@ -46,6 +46,21 @@ Formato:
  A2. IMAGEN
 -------------------------------------------------------------------------------
 
+ ESTILO                    |  --estilo brillo | bordes | braille
+   Defecto ..... "brillo"
+   Qué hace .... Cómo se dibuja cada cuadro:
+                   brillo .. un carácter de la RAMPA según el brillo
+                             (el clásico Bad Apple!! ASCII).
+                   bordes .. igual que brillo, pero los contornos se
+                             dibujan con / | \ - según su inclinación.
+                             Con RAMPA = "  " (dos espacios) quedan SOLO
+                             las líneas, como un dibujo a lápiz.
+                   braille . cada carácter es una celda de 2x4 puntos (⣿),
+                             así que hay 8 veces más detalle. Los grises se
+                             simulan con una trama de puntos.
+   Nota ........ braille ignora la RAMPA. Necesita una fuente con
+                 caracteres braille del mismo ancho (ver FUENTE).
+
  COLUMNAS                  |  --cols N
    Defecto ..... 100
    Rango ....... 60 - 200 (recomendado). Mínimo: 2.
@@ -77,12 +92,22 @@ Formato:
                             dentro, así que va mejor en el archivo).
    Nota ........ Los bloques (░▒▓█) se ven muy bien en la ventana; en la
                  consola clásica de Windows pueden no mostrarse.
-   Nota ........ Al exportar a video, { } \ se cambian por ( ) /.
+   Nota ........ Se usa en los estilos brillo y bordes.
+   Nota ........ Al exportar a video, \ se dibuja como ∖ (casi idéntico).
 
  INVERTIR                  |  --invertir  /  --no-invertir
    Defecto ..... False
    Qué hace .... Da la vuelta a la rampa: lo claro se dibuja oscuro y al
                  revés. Útil con fondo blanco o para videos claros.
+                 En braille, enciende los puntos de las zonas oscuras.
+
+ SENSIBILIDAD              |  --sensibilidad N
+   Defecto ..... 30
+   Rango ....... 10 - 80
+   Qué hace .... Solo para el estilo bordes: cuánto tiene que cambiar el
+                 brillo para que se dibuje un contorno.
+                   Más bajo -> más contornos (también en zonas suaves)
+                   Más alto -> solo los bordes más marcados
 
  MULTICOLOR                |  --multicolor  /  --no-multicolor
    Defecto ..... False
@@ -134,6 +159,16 @@ Formato:
    Nota ........ En el modo terminal no tiene efecto: cambia la fuente de la
                  consola (Ctrl + rueda del ratón en Windows Terminal).
 
+ FUENTE                    |  --fuente "NOMBRE"
+   Defecto ..... None (automática)
+   Qué hace .... Tipo de letra de la ventana y del video exportado.
+                 Automática = Consolas, o Cascadia Mono en el estilo braille
+                 (en Linux, DejaVu Sans Mono).
+   Ejemplos .... "Consolas", "Cascadia Mono", "Courier New", "Lucida Console"
+   Nota ........ Usa siempre una fuente MONOESPACIADA (todas las letras del
+                 mismo ancho), o la imagen se deforma.
+   Nota ........ En modo terminal no tiene efecto: se usa la de la consola.
+
  AJUSTE_AUTO               |  --ajustar  /  --no-ajustar
    Defecto ..... True
    Qué hace .... - Ventana: busca la letra más grande que cabe cada vez que
@@ -152,13 +187,13 @@ Formato:
                  Si no se encuentra ffplay, se desactiva solo al reproducir.
 
  RETRASO_AUDIO             |  --retraso-audio S
-   Defecto ..... 0.15 (segundos)
-   Rango ....... 0 - 1
-   Qué hace .... Retrasa el inicio del video para esperar a que ffplay
-                 arranque, y así queden sincronizados. También se aplica
-                 al reanudar después de una pausa.
-                   Sonido ADELANTADO a la imagen -> súbelo (0.25, 0.3...)
-                   Sonido ATRASADO a la imagen ---> bájalo (0.1, 0.05, 0)
+   Defecto ..... 0 (segundos)
+   Rango ....... -0.3 - 0.3
+   Qué hace .... Ajuste fino. La sincronía ya es automática (el video sigue
+                 al audio que está sonando), así que normalmente no hace
+                 falta tocarlo. Si aun así notas un desfase:
+                   Sonido ADELANTADO a la imagen -> positivo (0.05, 0.1)
+                   Sonido ATRASADO a la imagen ---> negativo (-0.05, -0.1)
    Nota ........ Solo se aplica cuando hay audio.
 
 -------------------------------------------------------------------------------
@@ -185,6 +220,10 @@ Formato:
    Nota ........ Se genera una caché distinta por cada combinación de
                  video, columnas, FPS, rampa, invertir y multicolor.
    Nota ........ Para borrar la caché:  python bad_apple.py --limpiar-cache
+
+ SALTO / SALTO_LARGO       |  (solo en el archivo)
+   Defecto ..... 5 y 30 (segundos)
+   Qué hace .... Cuánto saltan las flechas ← → (SALTO) y ↑ ↓ (SALTO_LARGO).
 
  CARPETA_CACHE             |  (solo en el archivo)
    Defecto ..... ".cache_ascii"
@@ -229,9 +268,11 @@ Formato:
 -------------------------------------------------------------------------------
  A8. TECLAS
 -------------------------------------------------------------------------------
-  Ventana:   Espacio pausa/seguir · F11 pantalla completa · + / - letra
-             0 ajuste automático · Esc salir de completa o cerrar · Q cerrar
-  Terminal:  Espacio pausa/seguir · Q o Esc salir · Ctrl+C salir
+  Ventana:   Espacio pausa/seguir · ← → ±5 s · ↑ ↓ ±30 s · Inicio
+             clic o arrastrar en la barra de progreso = ir a ese punto
+             F11 pantalla completa · + / - letra · 0 ajuste automático
+             Esc salir de completa o cerrar · Q cerrar
+  Terminal:  Espacio pausa/seguir · ← → ↑ ↓ Inicio saltar · Q o Esc salir
 
 
 ===============================================================================
@@ -446,16 +487,16 @@ Cada preset tiene:
 -------------------------------------------------------------------------------
  B18. CORRECCIÓN DE SINCRONIZACIÓN
 -------------------------------------------------------------------------------
-  Si el sonido no coincide con la imagen.
+  La sincronía es automática; esto es solo un ajuste fino por si lo notas.
 
   Sonido adelantado:
-      python bad_apple.py --retraso-audio 0.3
-
-  Sonido atrasado:
       python bad_apple.py --retraso-audio 0.05
 
+  Sonido atrasado:
+      python bad_apple.py --retraso-audio -0.05
+
   > ARCHIVO (ejemplo)
-      RETRASO_AUDIO = 0.3
+      RETRASO_AUDIO = 0.05
 
 -------------------------------------------------------------------------------
  B19. EXPORTAR A VIDEO PARA COMPARTIR (MP4 720p con audio)
@@ -496,6 +537,86 @@ Cada preset tiene:
 
   > ARCHIVO
       VIDEO = "otro_video.mp4"
+
+-------------------------------------------------------------------------------
+ B23. BRAILLE (máximo detalle)
+-------------------------------------------------------------------------------
+  Cada carácter son 2x4 puntos: la silueta se ve muy nítida.
+
+  > COMANDO
+      python bad_apple.py --estilo braille
+
+  > ARCHIVO
+      ESTILO = "braille"
+
+-------------------------------------------------------------------------------
+ B24. BRAILLE EN PANTALLA COMPLETA
+-------------------------------------------------------------------------------
+  Al arrancar pulsa F11.
+
+  > COMANDO
+      python bad_apple.py --estilo braille --cols 160 --precargar
+
+  > ARCHIVO
+      ESTILO = "braille"
+      COLUMNAS = 160
+      PRECARGAR = True
+
+-------------------------------------------------------------------------------
+ B25. BRAILLE NEGATIVO
+-------------------------------------------------------------------------------
+  Los puntos dibujan las siluetas en lugar del fondo.
+
+  > COMANDO
+      python bad_apple.py --estilo braille --invertir
+
+  > ARCHIVO
+      ESTILO = "braille"
+      INVERTIR = True
+
+-------------------------------------------------------------------------------
+ B26. BORDES
+-------------------------------------------------------------------------------
+  El relleno clásico, con los contornos dibujados con / | \ -.
+
+  > COMANDO
+      python bad_apple.py --estilo bordes
+
+  > ARCHIVO
+      ESTILO = "bordes"
+
+-------------------------------------------------------------------------------
+ B27. SOLO CONTORNOS (dibujo de líneas)
+-------------------------------------------------------------------------------
+  Sin relleno: solo las líneas de las siluetas, como un boceto.
+
+  > COMANDO
+      python bad_apple.py --estilo bordes --rampa "  "
+
+  > ARCHIVO
+      ESTILO = "bordes"
+      RAMPA = "  "
+
+  Variante con más líneas:  añade --sensibilidad 15
+
+-------------------------------------------------------------------------------
+ B28. EXPORTAR EN BRAILLE A 1080p
+-------------------------------------------------------------------------------
+  > COMANDO
+      python bad_apple.py --estilo braille --cols 140 --exportar bad_apple_braille.mp4 --alto-exportar 1080
+
+-------------------------------------------------------------------------------
+ B29. CON LOS .EXE
+-------------------------------------------------------------------------------
+  Los presets de arriba sirven igual con la versión de consola: cambia
+  "python bad_apple.py" por "BadAppleASCII-consola.exe".
+
+      BadAppleASCII-consola.exe --estilo braille --terminal
+      BadAppleASCII-consola.exe --exportar bad_apple_ascii.mp4
+
+  BadAppleASCII.exe (doble clic) usa la configuración por defecto. También
+  acepta opciones desde un acceso directo: clic derecho > Propiedades >
+  Destino, y añade al final, por ejemplo:  --estilo braille --bucle
 
 
 ===============================================================================

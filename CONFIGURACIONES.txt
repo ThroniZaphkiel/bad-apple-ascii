@@ -1,6 +1,6 @@
 ===============================================================================
                     BAD APPLE!! ASCII PLAYER — CONFIGURACIONES
-                                 (versión 3.0)
+                                 (versión 3.1)
 ===============================================================================
 
 Este archivo tiene dos partes:
@@ -46,7 +46,7 @@ Formato:
  A2. IMAGEN
 -------------------------------------------------------------------------------
 
- ESTILO                    |  --estilo brillo | bordes | braille
+ ESTILO                    |  --estilo brillo | bordes | braille | bloques
    Defecto ..... "brillo"
    Qué hace .... Cómo se dibuja cada cuadro:
                    brillo .. un carácter de la RAMPA según el brillo
@@ -58,8 +58,19 @@ Formato:
                    braille . cada carácter es una celda de 2x4 puntos (⣿),
                              así que hay 8 veces más detalle. Los grises se
                              simulan con una trama de puntos.
+                   bloques . medios bloques (▀ ▄): cada carácter son 2
+                             píxeles, uno encima de otro, así que hay el
+                             doble de filas. Con MULTICOLOR cada mitad
+                             lleva su propio color: es el estilo que mejor
+                             se ve con videos a color.
    Nota ........ braille ignora la RAMPA. Necesita una fuente con
                  caracteres braille del mismo ancho (ver FUENTE).
+   Nota ........ bloques también ignora la RAMPA. Sin MULTICOLOR usa dos
+                 tonos: COLOR_TEXTO para lo claro y COLOR_FONDO para lo
+                 oscuro. En la ventana, cada medio bloque se dibuja como un
+                 píxel ampliado (se ve igual y va mucho más rápido); en la
+                 terminal, en el .txt y al exportar se usan los caracteres
+                 ▀ ▄ █ de verdad.
 
  COLUMNAS                  |  --cols N
    Defecto ..... 100
@@ -100,6 +111,7 @@ Formato:
    Qué hace .... Da la vuelta a la rampa: lo claro se dibuja oscuro y al
                  revés. Útil con fondo blanco o para videos claros.
                  En braille, enciende los puntos de las zonas oscuras.
+                 En bloques (sin multicolor), pinta lo oscuro con el color.
 
  SENSIBILIDAD              |  --sensibilidad N
    Defecto ..... 30
@@ -119,6 +131,8 @@ Formato:
                  grises; donde luce de verdad es con otros videos.
    Nota ........ Es unas 3-4 veces más pesado. Si va a tirones, usa
                  PRECARGAR o menos columnas.
+   Nota ........ Con el estilo bloques, cada carácter tiene DOS colores
+                 (arriba y abajo): el doble de resolución de color.
 
  FPS                       |  --fps N
    Defecto ..... None (usa los FPS del video, con un máximo de 60)
@@ -156,6 +170,8 @@ Formato:
    Qué hace .... Tamaño de letra con el que se abre la ventana. Con el
                  ajuste automático, luego se adapta solo al tamaño de la
                  ventana. Se puede cambiar en vivo con + y -.
+   Nota ........ En el estilo bloques es el tamaño de cada píxel (en la
+                 barra de estado sale como "píxel 7").
    Nota ........ En el modo terminal no tiene efecto: cambia la fuente de la
                  consola (Ctrl + rueda del ratón en Windows Terminal).
 
@@ -164,6 +180,8 @@ Formato:
    Qué hace .... Tipo de letra de la ventana y del video exportado.
                  Automática = Consolas, o Cascadia Mono en el estilo braille
                  (en Linux, DejaVu Sans Mono).
+   Nota ........ Al exportar en bloques, deja la automática (Consolas):
+                 con otras fuentes pueden verse rayas entre las filas.
    Ejemplos .... "Consolas", "Cascadia Mono", "Courier New", "Lucida Console"
    Nota ........ Usa siempre una fuente MONOESPACIADA (todas las letras del
                  mismo ancho), o la imagen se deforma.
@@ -606,7 +624,37 @@ Cada preset tiene:
       python bad_apple.py --estilo braille --cols 140 --exportar bad_apple_braille.mp4 --alto-exportar 1080
 
 -------------------------------------------------------------------------------
- B29. CON LOS .EXE
+ B29. MEDIOS BLOQUES A COLOR (el mejor para videos a color)
+-------------------------------------------------------------------------------
+  Cada carácter son 2 píxeles con su propio color: el doble de filas que
+  el multicolor normal.
+
+  > COMANDO
+      python bad_apple.py "otro_video.mp4" --estilo bloques --multicolor
+
+  > ARCHIVO
+      ESTILO = "bloques"
+      MULTICOLOR = True
+
+  Variante en la terminal:  añade --terminal (mejor en Windows Terminal)
+  Variante exportada:       añade --exportar video_bloques.mp4
+
+-------------------------------------------------------------------------------
+ B30. BLOQUES DE DOS TONOS (estilo pantalla retro)
+-------------------------------------------------------------------------------
+  Bad Apple!! en píxeles gordos de dos colores, como una consola antigua.
+
+  > COMANDO
+      python bad_apple.py --estilo bloques --cols 80 --color "#9bbc0f" --fondo "#0f380f"
+
+  > ARCHIVO
+      ESTILO = "bloques"
+      COLUMNAS = 80
+      COLOR_TEXTO = "#9bbc0f"
+      COLOR_FONDO = "#0f380f"
+
+-------------------------------------------------------------------------------
+ B31. CON LOS .EXE
 -------------------------------------------------------------------------------
   Los presets de arriba sirven igual con la versión de consola: cambia
   "python bad_apple.py" por "BadAppleASCII-consola.exe".

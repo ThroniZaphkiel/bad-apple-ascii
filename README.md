@@ -19,13 +19,13 @@
 | **Lenguaje** | Python 3 (solo librería estándar) |
 | **Licencia** | MIT (ver [Licencia y créditos](#15-licencia-y-créditos)) |
 | **Archivo** | `bad_apple.py` |
-| **Versión** | 3.0 |
+| **Versión** | 3.1 |
 
 ---
 
 ## Descarga rápida (Windows, sin instalar Python)
 
-1. Descarga **`BadAppleASCII-v3.0-windows.zip`** de la página de [**Releases**](https://github.com/ThroniZaphkiel/bad-apple-ascii/releases/latest) (en la sección *Assets*, al final de la página).
+1. Descarga **`BadAppleASCII-v3.1-windows.zip`** de la página de [**Releases**](https://github.com/ThroniZaphkiel/bad-apple-ascii/releases/latest) (en la sección *Assets*, al final de la página).
 2. Descomprime el `.zip` en una carpeta (clic derecho → *Extraer todo*).
 3. Instala FFmpeg. Abre PowerShell y escribe:
    ```powershell
@@ -67,7 +67,7 @@ Un reproductor que convierte cualquier video en arte ASCII (texto) cuadro a cuad
 - en una ventana propia (Tkinter), o
 - directamente en la consola / terminal.
 
-Tiene tres estilos de dibujo (rampa de caracteres, contornos y braille) y puede guardar la animación como un video nuevo (`.mp4`, `.gif`...) o como texto.
+Tiene cuatro estilos de dibujo (rampa de caracteres, contornos, braille y medios bloques) y puede guardar la animación como un video nuevo (`.mp4`, `.gif`...) o como texto.
 
 Lo hice por hobby, como fan de Touhou.
 
@@ -104,10 +104,11 @@ El repositorio de git ignora los archivos de video (`.mp4`, `.mkv`, `.gif`...), 
   - `brillo`: cada carácter según el brillo: `" .:-=+*#%@"`
   - `bordes`: contornos con `/ | \ -` sobre el relleno (o solo líneas)
   - `braille`: cada carácter son 2x4 puntos (`⣿`): 8 veces más detalle
+  - `bloques`: medios bloques (`▀ ▄`): 2 píxeles por carácter, cada uno con su color si usas `--multicolor`
 - Reproducción en ventana o en terminal, con audio sincronizado.
 - Pausa, avanzar / retroceder con las flechas y barra de progreso en la que puedes hacer clic para ir a cualquier punto.
 - Pantalla completa con <kbd>F11</kbd> y ajuste automático de la letra.
-- Modo multicolor: cada carácter con el color del video (512 colores).
+- Modo multicolor: cada carácter con el color del video (512 colores). Con `--estilo bloques`, dos colores por carácter.
 - Bucle y precarga (convierte el video una vez y lo guarda en caché).
 - Exportar a `.mp4`, `.mkv`, `.webm`, `.gif` o `.txt`.
 - Colores por nombre (`verde`, `ambar`...) o en hexadecimal.
@@ -161,6 +162,7 @@ python bad_apple.py                            # configuración por defecto
 python bad_apple.py otro_video.mp4             # otro video
 python bad_apple.py --estilo braille           # máximo detalle
 python bad_apple.py --estilo bordes            # contornos
+python bad_apple.py --estilo bloques --multicolor   # medios bloques a color
 python bad_apple.py --cols 150                 # más detalle
 python bad_apple.py --multicolor               # con los colores del video
 python bad_apple.py --terminal                 # en la consola
@@ -196,7 +198,7 @@ Los `.exe` no se suben al repositorio: se publican en Releases. Windows SmartScr
 video                   Ruta del video. Por defecto: badapple.mp4
 
 IMAGEN
---estilo ESTILO         brillo, bordes o braille. Por defecto: brillo
+--estilo ESTILO         brillo, bordes, braille o bloques. Por defecto: brillo
 --cols N                Ancho en caracteres. Por defecto: 100
 --fps N                 Cuadros por segundo. Por defecto: los del video
 --rampa "TEXTO"         Caracteres de oscuro a claro (brillo y bordes)
@@ -267,6 +269,7 @@ Los saltos funcionan también en pausa: se queda en pausa mostrando el nuevo pun
    - **brillo:** una tabla de 256 entradas asigna un carácter a cada brillo y se aplica a todo el cuadro de una vez con `str.translate`.
    - **bordes:** ffmpeg calcula los gradientes horizontal y vertical (filtro Sobel). Una tabla precalculada de 65.536 entradas convierte cada par de gradientes en `/ | \ -` según el ángulo. El borde se dibuja solo en el lado claro para que la línea tenga 1 carácter de grosor.
    - **braille:** el video se reescala a 2x4 píxeles por carácter. Cada punto se enciende si supera su umbral (una trama de Bayer de 2x4 que simula grises). Los 8 puntos se combinan con aritmética de enteros grandes, sin recorrer píxel a píxel.
+   - **bloques:** el video se reescala a 1x2 píxeles por carácter. En la terminal, el píxel de arriba es el color de *fondo* del carácter y el de abajo el de un `▄` (o un espacio si son iguales). Al exportar, como los subtítulos no tienen fondo por carácter, se dibujan dos capas: `█` con el color de arriba y encima `▄` con el de abajo, con un contorno del mismo color para que no se vean costuras. En la ventana, cada medio bloque es exactamente un píxel, así que se dibuja como una imagen (`PhotoImage`) ampliada: se ve igual, sin las rayas que dejan algunas fuentes, y va unas 5-10 veces más rápido que con texto.
    - **multicolor:** el color se reduce a 512 tonos y los caracteres seguidos del mismo color se agrupan para dibujarlos de una vez.
 
 4. **Precarga** (opcional). Los cuadros convertidos se guardan comprimidos en `.cache_ascii\`. Hay una caché distinta por cada combinación de ajustes.
@@ -288,6 +291,8 @@ Los saltos funcionan también en pausa: se queda en pausa mostrando el nuevo pun
   | brillo | ~2.800 |
   | bordes | ~1.500 |
   | braille | ~2.100 |
+  | bloques (ventana) | ~3.300 |
+  | bloques + multicolor (ventana) | ~900 |
   | multicolor (cualquier estilo) | ~550-750 |
 
 - Precargar Bad Apple!! completo en braille tardó unos 3 s y ocupa 2,4 MB.
@@ -375,6 +380,9 @@ sudo apt install python3-tk
 
 ## 14. Historial de cambios e ideas
 
+**v3.1** (2026-11-21)
+- [x] Estilo nuevo: medios bloques (`▀ ▄`) con `--estilo bloques`. Dobla las filas y, con `--multicolor`, cada carácter lleva dos colores. Funciona en ventana, terminal y al exportar.
+
 **v3.0** (2026-11-21)
 - [x] Estilos nuevos: bordes (contornos con `/ | \ -`) y braille (2x4 puntos por carácter, con trama para simular grises).
 - [x] Avanzar / retroceder con las flechas, ir al inicio, y barra de progreso con clic (en ventana) o dibujada (en terminal).
@@ -393,7 +401,6 @@ sudo apt install python3-tk
 - Reproducción en ventana y en terminal con audio sincronizado.
 
 **Ideas para el futuro**
-- [ ] Estilo "medios bloques" (`▀▄`) con dos colores por carácter.
 - [ ] Elegir la pista de audio en videos con varias.
 
 ## 15. Licencia y créditos

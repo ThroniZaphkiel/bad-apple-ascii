@@ -19,6 +19,7 @@ Uso:
   python bad_apple.py otro_video.mp4
   python bad_apple.py --estilo braille         # 8 veces más detalle
   python bad_apple.py --estilo bordes          # contornos con / | \\ -
+  python bad_apple.py --estilo bloques --multicolor  # medios bloques ▀▄ a color
   python bad_apple.py --cols 150 --multicolor  # cada letra con su color
   python bad_apple.py --terminal --bucle       # en la consola, repitiendo
   python bad_apple.py --precargar              # convierte todo antes (más fluido)
@@ -51,7 +52,8 @@ import time
 #  (Lo que escribas en el comando, p. ej. --cols 140, tiene prioridad.)
 # =========================================================================== #
 VIDEO          = "badapple.mp4"  # video que se abre si no escribes ninguno
-ESTILO         = "brillo"    # "brillo" (rampa), "bordes" (/ | \ -) o "braille" (⣿)
+ESTILO         = "brillo"    # "brillo" (rampa), "bordes" (/ | \ -), "braille" (⣿)
+                             # o "bloques" (▀▄: doble de filas; ideal con MULTICOLOR)
 COLUMNAS       = 100         # ancho en caracteres: más = más detalle (60-200)
 TAMANO_LETRA   = 7           # tamaño de letra inicial en la ventana (4-12)
 FUENTE         = None        # None = automática. Ej: "Consolas", "Cascadia Mono"
@@ -79,7 +81,7 @@ EN_WINDOWS = sys.platform == "win32"
 SIN_CONSOLA = sys.stdout is None
 # Que ffmpeg/ffplay no abran ventanas negras de consola en Windows.
 OCULTO = {"creationflags": subprocess.CREATE_NO_WINDOW} if EN_WINDOWS else {}
-ESTILOS = ("brillo", "bordes", "braille")
+ESTILOS = ("brillo", "bordes", "braille", "bloques")
 VERSION_CACHE = 2
 FIN = None          # señal de "se acabó el video" que viaja por la cola
 NADA = object()     # "todavía no toca dibujar nada"
@@ -283,7 +285,8 @@ class Conversor:
     """Convierte cuadros crudos de ffmpeg al formato que necesita cada salida.
 
     estilo: 'brillo' (rampa de caracteres), 'bordes' (contornos + rampa) o
-            'braille' (cada carácter = 2x4 puntos).
+            'braille' (cada carácter = 2x4 puntos) o 'bloques' (cada carácter
+            = 2 píxeles, uno encima de otro, con medios bloques ▀▄).
     salida: 'texto' (str), 'tk' (lista texto/etiqueta para un Text de Tkinter),
             'ansi' (str con colores de terminal) o 'ass' (subtítulo ASS).
 
@@ -292,15 +295,15 @@ class Conversor:
     """
 
     def __init__(self, cols, filas, rampa, invertir, multicolor, salida,
-                 estilo="brillo", sensibilidad=SENSIBILIDAD):
+                 estilo="brillo", sensibilidad=SENSIBILIDAD, color="#ffffff", fondo="#000000"):
         self.cols, self.filas = cols, filas
         self.multicolor, self.salida, self.estilo = multicolor, salida, estilo
         self.tabla = tabla_caracteres(rampa, invertir)
         self.traduccion = {i: c for i, c in enumerate(self.tabla)}
         self.pix_fmt = "rgb24" if multicolor else "gray"
         n = cols * filas
-        planos = {"brillo": 1, "bordes": 3, "braille": 8}[estilo]
-        if multicolor:   # + un plano de color; braille: color de 2c x f
+        planos = {"brillo": 1, "bordes": 3, "braille": 8, "bloques": 2}[estilo]
+        if multicolor and estilo != "bloques":   # + un plano de color; braille: 2c x f
             planos += 2 if estilo == "braille" else 1
         self.tam = n * planos * (3 if multicolor else 1)
         if estilo == "bordes":
@@ -313,15 +316,27 @@ class Conversor:
                 self.tablas_braille.append(
                     (dx, dy, bytes(bit if encendido(v) else 0 for v in range(256))))
             self.traduccion_braille = {i: chr(0x2800 + i) for i in range(256)}
+        if estilo == "bloques":   # píxel encendido (1) o apagado (0)
+            self.tabla_bloques = bytes(int((255 - v if invertir else v) > 127) for v in range(256))
+            # Al exportar, el contorno (\3c) va del mismo color que la letra
+            # para tapar las costuras entre caracteres (ver cabecera_ass).
+            self.codigos_ass_bloques = ["{\\c&H%02X%02X%02X&\\3c&H%02X%02X%02X&}"
+                                        % (color_de_indice(i)[::-1] * 2) for i in range(512)]
+            # Ventana: color de cada píxel de la imagen (ver ReproductorVentana)
+            self.hex_bloques = (["#%02x%02x%02x" % color_de_indice(i) for i in range(512)]
+                                if multicolor else [fondo, color])
         self.codigos_ansi = ["\033[38;2;%d;%d;%dm" % color_de_indice(i) for i in range(512)]
         self.codigos_ass = ["{\\c&H%02X%02X%02X&}" % color_de_indice(i)[::-1] for i in range(512)]
+        self.codigos_ansi_fondo = ["\033[48;2;%d;%d;%dm" % color_de_indice(i) for i in range(512)]
 
     def filtro(self, fps):
         c, f = self.cols, self.filas
         esc = f"scale={c}:{f}:flags=area"
         sx = f"convolution=0m='{SOBEL_X}':0rdiv=0.125:0bias=128"
         sy = f"convolution=0m='{SOBEL_Y}':0rdiv=0.125:0bias=128"
-        if self.estilo == "braille":
+        if self.estilo == "bloques":
+            g = f"scale={c}:{2 * f}:flags=area"
+        elif self.estilo == "braille":
             alta = f"scale={2 * c}:{4 * f}:flags=area,format=gray"
             if not self.multicolor:
                 g = alta
@@ -348,6 +363,8 @@ class Conversor:
         c, f = self.cols, self.filas
         n = c * f
         colores = None
+        if self.estilo == "bloques":
+            return self._bloques(datos)
         if self.estilo == "braille":
             if self.multicolor:
                 alta = datos[:n * 8 * 3][0::3]
@@ -381,6 +398,66 @@ class Conversor:
                              for y in range(f))
             total += int.from_bytes(trozo.translate(tabla), "big")   # bits distintos: suma = OR
         return total.to_bytes(c * f, "big").decode("latin-1").translate(self.traduccion_braille)
+
+    def _bloques(self, datos):
+        """Cada carácter son 2 píxeles: el de arriba (A) y el de abajo (B).
+        En la terminal, A es el color de FONDO del carácter y B el de un "▄"
+        (o un espacio si A == B). En la ventana, cada medio bloque es
+        exactamente un píxel, así que se dibuja como una imagen ampliada: se ve
+        igual, sin las rayas que dejan algunas fuentes, y es mucho más rápido."""
+        c, f = self.cols, self.filas
+        if self.multicolor:
+            r, g, b = datos[0::3], datos[1::3], datos[2::3]
+            px = [(x >> 5) << 6 | (y >> 5) << 3 | (z >> 5) for x, y, z in zip(r, g, b)]
+        else:
+            px = datos.translate(self.tabla_bloques)
+        if self.salida == "tk":   # datos de una PhotoImage: "{#rgb #rgb ...} {...}"
+            hx = self.hex_bloques
+            return " ".join("{" + " ".join([hx[v] for v in px[y * c:(y + 1) * c]]) + "}"
+                            for y in range(2 * f))
+        filas = [(px[2 * y * c:(2 * y + 1) * c], px[(2 * y + 1) * c:(2 * y + 2) * c])
+                 for y in range(f)]
+        if not self.multicolor:
+            # Un solo color: basta con los caracteres ▀ ▄ █ (o espacio).
+            chars = " \u2584\u2580\u2588"
+            texto = "\n".join("".join(chars[a << 1 | b] for a, b in zip(arr, aba))
+                              for arr, aba in filas)
+            return escapar_ass(texto) if self.salida == "ass" else texto
+        if self.salida == "ass":
+            # Los subtítulos no tienen color de fondo por carácter: dos capas,
+            # "█" con el color de arriba y encima "▄" con el de abajo.
+            capa_a, capa_b = [], []
+            for arr, aba in filas:
+                for tramo, a, b in self._tramos_bloques(arr, aba):
+                    capa_a.append(self.codigos_ass_bloques[a] + "\u2588" * len(tramo))
+                    capa_b.append("\\h" * len(tramo) if a == b
+                                  else self.codigos_ass_bloques[b] + "\u2584" * len(tramo))
+                capa_a.append("\\N")
+                capa_b.append("\\N")
+            return "".join(capa_a[:-1]), "".join(capa_b[:-1])
+        # ansi (terminal o .txt): fondo = arriba, letra = abajo
+        lineas = []
+        for arr, aba in filas:
+            lineas.append("".join(
+                self.codigos_ansi_fondo[a] + (tramo if a == b else self.codigos_ansi[b] + tramo)
+                for tramo, a, b in self._tramos_bloques(arr, aba)) + "\033[0m")
+        return "\n".join(lineas)
+
+    @staticmethod
+    def _tramos_bloques(arr, aba):
+        """Una fila de celdas -> [(texto, color_arriba, color_abajo), ...],
+        juntando las celdas seguidas iguales. El texto es " " si arriba y abajo
+        coinciden (solo se ve el fondo) o "▄" si no."""
+        tramos, n, previo = [], 0, None
+        for par in zip(arr, aba):
+            if par != previo:
+                if n:
+                    tramos.append((("\u2584" if previo[0] != previo[1] else " ") * n, *previo))
+                previo, n = par, 0
+            n += 1
+        if n:
+            tramos.append((("\u2584" if previo[0] != previo[1] else " ") * n, *previo))
+        return tramos
 
     def _formatear(self, chars, colores):
         if colores is None:
@@ -526,7 +603,8 @@ def ruta_cache(args, conv):
     clave = json.dumps([VERSION_CACHE, os.path.abspath(args.video), st.st_size,
                         st.st_mtime_ns, conv.cols, conv.filas, args.fps, args.rampa,
                         args.invertir, conv.multicolor, conv.salida, conv.estilo,
-                        args.sensibilidad])
+                        args.sensibilidad]
+                       + ([args.color, args.fondo] if conv.estilo == "bloques" else []))
     h = hashlib.sha1(clave.encode("utf-8")).hexdigest()[:12]
     base = os.path.splitext(os.path.basename(args.video))[0]
     carpeta = os.path.join(carpeta_programa(), CARPETA_CACHE)
@@ -845,7 +923,15 @@ class ReproductorVentana:
         self.lienzo = tk.Frame(root, bg=args.fondo)
         self.lienzo.pack(fill="both", expand=True, padx=6, pady=6)
 
-        if args.multicolor:
+        self.bloques = args.estilo == "bloques"
+        if self.bloques:
+            # Cada píxel de la imagen es un medio bloque; la "letra" es su tamaño.
+            self._imagen = tk.PhotoImage(master=root, width=cols, height=2 * filas)
+            self._ampliada = None
+            self._ultimo = None
+            self.pantalla = tk.Label(self.lienzo, bg=args.fondo, bd=0, padx=0, pady=0)
+            self.dibujar = self._dibujar_bloques
+        elif args.multicolor:
             self.pantalla = tk.Text(
                 self.lienzo, font=self.fuente, fg=args.color, bg=args.fondo,
                 width=cols, height=filas, bd=0, highlightthickness=0, padx=0, pady=0,
@@ -881,6 +967,8 @@ class ReproductorVentana:
 
     # ---- tamaño de letra -------------------------------------------------- #
     def _metrica(self, tam):
+        if self.bloques:
+            return tam, 2 * tam
         if tam not in self._metricas:
             self._medidor.configure(size=tam)
             self._metricas[tam] = (self._medidor.measure("M" * 20) / 20,
@@ -920,11 +1008,15 @@ class ReproductorVentana:
         tam = self._mejor_tamano(self.lienzo.winfo_width(), self.lienzo.winfo_height())
         if tam != self.fuente.cget("size"):
             self.fuente.configure(size=tam)
+            if self.bloques:
+                self._ampliar()
         self._estado()
 
     def zoom(self, d):
         self.auto = False
         self.fuente.configure(size=max(2, self.fuente.cget("size") + d))
+        if self.bloques:
+            self._ampliar()
         self._ajustar_ventana()
         self._estado()
 
@@ -983,6 +1075,19 @@ class ReproductorVentana:
         self.barra.coords(self._relleno, 0, 4, ancho * frac, 8)
 
     # ---- dibujo ----------------------------------------------------------- #
+    def _dibujar_bloques(self, datos):
+        self._ultimo = datos
+        self._imagen.put(datos)
+        self._ampliar()
+
+    def _ampliar(self):
+        """Amplía la imagen al tamaño actual (cada píxel = tam x tam)."""
+        if self._ultimo is None:
+            return
+        tam = self.fuente.cget("size")
+        self._ampliada = self._imagen.zoom(tam, tam)
+        self.pantalla.configure(image=self._ampliada)
+
     def _dibujar_color(self, partes):
         p = self.pantalla
         p.configure(state="normal")
@@ -996,7 +1101,8 @@ class ReproductorVentana:
         elif self.terminado:
             texto = "Fin del video  ·  Espacio = repetir  ·  ← = retroceder  ·  Esc = salir"
         else:
-            letra = f"letra {self.fuente.cget('size')}{' auto' if self.auto else ''}"
+            nombre = "píxel" if self.bloques else "letra"
+            letra = f"{nombre} {self.fuente.cget('size')}{' auto' if self.auto else ''}"
             texto = (f"{mmss(self.sesion.segundos())} / {mmss(self.duracion)}  ·  "
                      f"{self.cols}x{self.filas}  ·  {self.fps_real:4.1f} fps  ·  {letra}")
             if self.sesion.bucle:
@@ -1179,8 +1285,11 @@ def tiempo_ass(seg):
     return f"{cs // 360000}:{cs // 6000 % 60:02d}:{cs // 100 % 60:02d}.{cs % 100:02d}"
 
 
-def cabecera_ass(ancho, alto, familia, letra, color_hex, alineacion=5):
+def cabecera_ass(ancho, alto, familia, letra, color_hex, alineacion=5, contorno=0.0):
+    """contorno > 0: un borde del mismo color que la letra (estilo bloques),
+    para que no se vean las costuras suavizadas entre un bloque y otro."""
     r, g, b = color_rgb(color_hex)
+    borde = f"&H00{b:02X}{g:02X}{r:02X}" if contorno else "&H00000000"
     return ("[Script Info]\nScriptType: v4.00+\n"
             f"PlayResX: {ancho}\nPlayResY: {alto}\nWrapStyle: 2\n\n"
             "[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, "
@@ -1188,7 +1297,7 @@ def cabecera_ass(ancho, alto, familia, letra, color_hex, alineacion=5):
             "StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, "
             "Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
             f"Style: A,{familia},{letra},&H00{b:02X}{g:02X}{r:02X},&H00FFFFFF,"
-            f"&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,{alineacion},0,0,0,1\n\n"
+            f"{borde},&H00000000,0,0,0,0,100,100,0,0,1,{contorno:g},0,{alineacion},0,0,0,1\n\n"
             "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, "
             "MarginR, MarginV, Effect, Text\n")
 
@@ -1240,10 +1349,13 @@ def exportar_video(args, conv, total, duracion, tiene_audio, salida):
         print(f"Paso 1/2: preparando {total} cuadros ({ancho}x{alto} px, {familia})...")
         t0, n = time.perf_counter(), 0
         with open(os.path.join(carpeta, "cuadros.ass"), "w", encoding="utf-8") as f:
-            f.write(cabecera_ass(ancho, alto, familia, letra, args.color))
+            f.write(cabecera_ass(ancho, alto, familia, letra, args.color,
+                                 contorno=0.6 if conv.estilo == "bloques" else 0.0))
             for cuadro in LectorFFmpeg(args.ffmpeg, args.video, args.fps, conv):
-                f.write(f"Dialogue: 0,{tiempo_ass(n / args.fps)},"
-                        f"{tiempo_ass((n + 1) / args.fps)},A,,0,0,0,,{cuadro}\n")
+                inicio, fin = tiempo_ass(n / args.fps), tiempo_ass((n + 1) / args.fps)
+                capas = cuadro if isinstance(cuadro, tuple) else (cuadro,)   # bloques: 2
+                for capa, texto in enumerate(capas):
+                    f.write(f"Dialogue: {capa},{inicio},{fin},A,,0,0,0,,{texto}\n")
                 n += 1
                 if n % 25 == 0:
                     mostrar_progreso(n, total, t0, "Cuadros")
@@ -1291,7 +1403,8 @@ def crear_parser():
     g = p.add_argument_group("imagen")
     g.add_argument("--estilo", choices=ESTILOS, default=ESTILO,
                    help=f"brillo = rampa de caracteres, bordes = contornos / | \\ -, "
-                        f"braille = puntos ⣿ con 8 veces más detalle ({ESTILO})")
+                        f"braille = puntos ⣿ con 8 veces más detalle, bloques = medios "
+                        f"bloques ▀▄ con el doble de filas (mejor con --multicolor) ({ESTILO})")
     g.add_argument("--cols", type=int, default=COLUMNAS, help=f"columnas de caracteres ({COLUMNAS})")
     g.add_argument("--fps", type=float, default=FPS, help="cuadros por segundo (por defecto, los del video)")
     g.add_argument("--rampa", default=RAMPA, help="caracteres de oscuro a claro")
@@ -1413,7 +1526,7 @@ def main(propia=False):
 
     def conversor(salida):
         return Conversor(cols, filas, args.rampa, args.invertir, args.multicolor,
-                         salida, args.estilo, args.sensibilidad)
+                         salida, args.estilo, args.sensibilidad, args.color, args.fondo)
 
     if exportando:
         ext = os.path.splitext(args.exportar)[1].lower()
@@ -1424,7 +1537,10 @@ def main(propia=False):
             exportar_video(args, conversor("ass"), total, duracion, tiene_audio, args.exportar)
         return
 
-    salida = ("ansi" if args.terminal else "tk") if args.multicolor else "texto"
+    if args.multicolor:
+        salida = "ansi" if args.terminal else "tk"
+    else:   # en ventana, bloques es una imagen aunque sea de un solo color
+        salida = "tk" if args.estilo == "bloques" and not args.terminal else "texto"
     conv = conversor(salida)
     if args.precargar:
         try:

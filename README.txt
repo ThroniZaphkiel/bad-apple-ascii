@@ -74,7 +74,8 @@ animación tienen derechos de autor de sus creadores (ver sección 15).
 
 Para usarlo:
   1) Consigue por tu cuenta una copia del video (el PV de siluetas de
-     Bad Apple!! es muy fácil de encontrar).
+     Bad Apple!! es muy fácil de encontrar). Publicación original, en
+     Nico Nico Douga:  https://www.nicovideo.jp/watch/sm8628149
   2) Guárdala como "badapple.mp4" en la misma carpeta que bad_apple.py
      (o que el .exe).
   3) Ejecuta el programa.
